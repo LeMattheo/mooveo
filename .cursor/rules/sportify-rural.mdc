@@ -1,0 +1,13 @@
+---
+description: Règles projet Sportify Rural — MVP sorties sportives en milieu rural
+globs: ["**/*.ts", "**/*.tsx"]
+---
+
+# Sportify Rural — Conventions
+
+- **Stack** : Next.js 14 App Router, TypeScript strict, Tailwind, Supabase (@supabase/ssr), Vercel.
+- **Auth** : email + password uniquement. Middleware protège les routes ; redirect /login si non connecté.
+- **Données** : Client Supabase direct pour CRUD simples ; Route Handlers pour join/cancel ; Server Actions pour formulaires ; RPC pour search_events_nearby.
+- **Types** : Pas de `any`. Utiliser les types dans `lib/supabase/types.ts` et les types métier (Sport, Level, EventStatus).
+- **Tailwind** : mobile-first, primary=blue-600, rounded-xl, messages d’erreur en français.
+- **Formulaires** : React Hook Form + Zod, loading states sur les boutons.
