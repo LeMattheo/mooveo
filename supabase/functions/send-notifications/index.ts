@@ -19,7 +19,9 @@ function formatDate(isoString: string) {
   })
 }
 
-const templates: Record<string, (data: { event: Record<string, unknown>; profile: Record<string, unknown> }) => { subject: string; html: string }> = {
+const APP_URL = Deno.env.get('APP_URL') || 'https://sportify-rural.fr'
+
+const templates: Record<string, (data: { event?: Record<string, unknown>; profile: Record<string, unknown>; sender?: Record<string, unknown>; accepter?: Record<string, unknown> }) => { subject: string; html: string }> = {
   join_confirm: ({ event, profile }) => ({
     subject: `✅ Inscription confirmée — ${event.title}`,
     html: `
@@ -73,7 +75,31 @@ const templates: Record<string, (data: { event: Record<string, unknown>; profile
         <h2 style="color:#ef4444">Sortie annulée</h2>
         <p>Bonjour ${(profile.full_name as string) || profile.username},</p>
         <p>Malheureusement, la sortie <strong>${event.title}</strong> du ${formatDate(event.event_date as string)} a été annulée par l'organisateur.</p>
-        <p><a href="${Deno.env.get('APP_URL')}/events" style="color:#2563eb">Voir d'autres sorties →</a></p>
+        <p><a href="${APP_URL}/events" style="color:#2563eb">Voir d'autres sorties →</a></p>
+      </div>
+    `,
+  }),
+
+  partnership_request: ({ profile, sender }) => ({
+    subject: `👋 ${(sender?.username as string) || 'Quelqu\'un'} veut être votre partenaire sportif`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#2563eb">Demande de partenariat</h2>
+        <p>Bonjour ${(profile.full_name as string) || profile.username},</p>
+        <p>${(sender?.full_name as string) || sender?.username} vous a envoyé une demande de partenariat sur Sportify Rural.</p>
+        <p><a href="${APP_URL}/partners/requests" style="color:#2563eb">Voir la demande →</a></p>
+      </div>
+    `,
+  }),
+
+  partnership_accepted: ({ profile, accepter }) => ({
+    subject: `✅ ${(accepter?.username as string) || 'Un partenaire'} a accepté votre demande`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#10b981">Demande acceptée !</h2>
+        <p>Bonjour ${(profile.full_name as string) || profile.username},</p>
+        <p>Bonne nouvelle ! ${(accepter?.full_name as string) || accepter?.username} est maintenant votre partenaire sportif.</p>
+        <p><a href="${APP_URL}/profile/${accepter?.username}" style="color:#2563eb">Voir son profil →</a></p>
       </div>
     `,
   }),
@@ -89,7 +115,7 @@ Deno.serve(async (req) => {
     const { data: jobs, error } = await supabase
       .from('notification_jobs')
       .select(`
-        id, type, event_id, user_id,
+        id, type, event_id, user_id, related_user_id,
         events ( title, event_date, meeting_name, sport ),
         profiles ( username, full_name )
       `)
@@ -117,9 +143,25 @@ Deno.serve(async (req) => {
         const tpl = templates[job.type]
         if (!tpl) throw new Error(`Unknown notification type: ${job.type}`)
 
-        const event = job.events as Record<string, unknown>
-        const profile = job.profiles as Record<string, unknown>
-        const { subject, html } = tpl({ event, profile })
+        const event = (job.events || {}) as Record<string, unknown>
+        const profile = (job.profiles || {}) as Record<string, unknown>
+        let subject: string
+        let html: string
+        if (job.type === 'partnership_request' && job.related_user_id) {
+          const { data: sender } = await supabase.from('profiles').select('username, full_name').eq('id', job.related_user_id).single()
+          const out = tpl({ profile, sender: (sender || {}) as Record<string, unknown> })
+          subject = out.subject
+          html = out.html
+        } else if (job.type === 'partnership_accepted' && job.related_user_id) {
+          const { data: accepter } = await supabase.from('profiles').select('username, full_name').eq('id', job.related_user_id).single()
+          const out = tpl({ profile, accepter: (accepter || {}) as Record<string, unknown> })
+          subject = out.subject
+          html = out.html
+        } else {
+          const out = tpl({ event, profile })
+          subject = out.subject
+          html = out.html
+        }
 
         const { error: emailError } = await resend.emails.send({
           from: FROM_EMAIL,

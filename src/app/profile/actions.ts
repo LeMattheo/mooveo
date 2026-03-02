@@ -1,30 +1,35 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { Sport } from "@/types";
 
-export async function saveOnboardingAction(data: {
-  full_name: string;
+export async function updateProfileAction(data: {
+  full_name: string | null;
+  bio: string | null;
+  level: string | null;
+  home_lat: number | null;
+  home_lon: number | null;
+  home_display_name: string | null;
   sports: Sport[];
-  home_lat: number;
-  home_lon: number;
-  home_display_name?: string | null;
+  avatar_url: string | null;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) return { error: "Non connecté." };
 
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
-      full_name: data.full_name,
+      full_name: data.full_name?.trim() || null,
+      bio: data.bio?.trim() || null,
+      level: data.level || null,
       home_lat: data.home_lat,
       home_lon: data.home_lon,
-      home_display_name: data.home_display_name ?? null,
+      home_display_name: data.home_display_name || null,
+      avatar_url: data.avatar_url || null,
     })
     .eq("id", user.id);
 
@@ -41,5 +46,6 @@ export async function saveOnboardingAction(data: {
   revalidatePath("/", "layout");
   revalidatePath("/profile");
   revalidatePath("/events");
-  redirect("/events");
+  revalidatePath("/partners");
+  return { error: null };
 }

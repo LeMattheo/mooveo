@@ -17,6 +17,7 @@ export default function OnboardingPage() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [homeLat, setHomeLat] = useState<number | null>(null);
   const [homeLon, setHomeLon] = useState<number | null>(null);
+  const [homeDisplayName, setHomeDisplayName] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +44,7 @@ export default function OnboardingPage() {
         sports,
         home_lat: homeLat!,
         home_lon: homeLon!,
+        home_display_name: homeDisplayName,
       }).catch((err: Error) => {
         setError(err.message);
         setSubmitting(false);
@@ -70,9 +72,11 @@ export default function OnboardingPage() {
           <StepLocation
             lat={homeLat}
             lon={homeLon}
-            onLocation={(lat, lon) => {
+            displayName={homeDisplayName}
+            onLocation={(lat, lon, displayName) => {
               setHomeLat(lat);
               setHomeLon(lon);
+              setHomeDisplayName(displayName ?? null);
             }}
             onSearch={geocodeToCoords}
           />

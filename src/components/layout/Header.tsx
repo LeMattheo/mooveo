@@ -8,6 +8,16 @@ export async function Header() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  let pendingPartnersCount = 0;
+  if (user) {
+    const { count } = await supabase
+      .from("partnerships")
+      .select("id", { count: "exact", head: true })
+      .eq("addressee_id", user.id)
+      .eq("status", "pending");
+    pendingPartnersCount = count ?? 0;
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
@@ -33,6 +43,17 @@ export async function Header() {
                 className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               >
                 Créer
+              </Link>
+              <Link
+                href="/partners"
+                className="relative rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              >
+                Partenaires
+                {pendingPartnersCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    {pendingPartnersCount}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/profile"

@@ -122,6 +122,13 @@ export function LoginForm() {
       >
         {isSignUp ? "Déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire"}
       </button>
+      {!isSignUp && (
+        <p className="mt-3 text-center">
+          <a href="/auth/forgot" className="text-sm text-slate-600 hover:text-emerald-600">
+            Mot de passe oublié ?
+          </a>
+        </p>
+      )}
     </form>
   );
 }

@@ -35,8 +35,11 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname === "/login";
   const isPublicPage = request.nextUrl.pathname === "/";
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback");
+  const isResetPasswordCallback = request.nextUrl.pathname === "/auth/reset-password-callback";
+  const isForgotPassword = request.nextUrl.pathname === "/auth/forgot";
+  const isSetPassword = request.nextUrl.pathname === "/auth/set-password";
 
-  if (!user && !isAuthPage && !isPublicPage && !isAuthCallback) {
+  if (!user && !isAuthPage && !isPublicPage && !isAuthCallback && !isResetPasswordCallback && !isForgotPassword && !isSetPassword) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

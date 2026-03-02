@@ -30,6 +30,7 @@ export default function AuthCallbackPage() {
         const params = new URLSearchParams(hash.replace(/^#/, ""));
         const access_token = params.get("access_token");
         const refresh_token = params.get("refresh_token");
+        const type = params.get("type");
         if (access_token && refresh_token) {
           const { error } = await supabase.auth.setSession({
             access_token,
@@ -39,7 +40,9 @@ export default function AuthCallbackPage() {
             setStatus("error");
             return;
           }
-          router.replace(next);
+          // Réinitialisation mot de passe : rediriger vers la page pour définir le nouveau
+          const target = type === "recovery" ? "/auth/set-password" : next;
+          router.replace(target);
           return;
         }
       }
@@ -52,13 +55,16 @@ export default function AuthCallbackPage() {
 
   if (status === "error") {
     return (
-      <main className="min-h-screen flex items-center justify-center p-6">
-        <p className="text-red-600">
-          Erreur de connexion.{" "}
-          <a href="/login" className="underline">
-            Retour à la connexion
-          </a>
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
+        <p className="text-red-600 text-center">
+          Erreur de connexion. Le lien a peut-être expiré.
         </p>
+        <a href="/auth/forgot" className="text-emerald-600 underline">
+          Demander un nouveau lien (mot de passe oublié)
+        </a>
+        <a href="/login" className="text-slate-600 underline">
+          Retour à la connexion
+        </a>
       </main>
     );
   }
